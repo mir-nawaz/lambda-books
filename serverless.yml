@@ -20,25 +20,25 @@ org: mirnawaz
 # Check out our docs for more details
 # frameworkVersion: "=X.X.X"
 custom:
-  settings:
-    TABLE_NAME: books
+  ENDPOINTS:
+    DYNAMODB: 'http://localhost:8000'
+  TABLES:
+    BOOKS: 'books' 
+  dynamodb:
+    start:
+      migrate: true
+    stages:
+      - dev
 
 provider:
   name: aws
   runtime: nodejs10.x
   region: ap-south-1
-  environment: ${self:custom.settings}
-  iamRoleStatements:
-   - Effect: "Allow"
-     Action:
-        - dynamodb:Query
-        - dynamodb:Scan
-        - dynamodb:GetItem
-        - dynamodb:PutItem
-        - dynamodb:UpdateItem
-        - dynamodb:DeleteItem
-     Resource:
-      - "arn:aws:dynamodb:${self:provider.region}:*:table/${self:custom.settings.TABLE_NAME}"
+  environment: 
+    BOOKS_TABLE: ${self:custom.TABLES.BOOKS}
+    DYNAMODB_ENDPOINT: ${self:custom.ENDPOINTS.DYNAMODB}
+    IS_OFFLINE: 'true'
+  
 # you can overwrite defaults here
 #  stage: dev
 #  region: us-east-1
@@ -83,20 +83,20 @@ functions:
     handler: handler.add
     events:
     - http:
-        path: /book/add
+        path: /book
         method: post
   update:
     handler: handler.update
     events:
     - http:
-        path: /book/{id}/update
-        method: post
+        path: /book/{id}
+        method: put
   delete:
     handler: handler.delete
     events:
     - http:
-        path: /book/{id}/delete
-        method: post    
+        path: /book/{id}
+        method: delete    
   detail:
     handler: handler.detail
     events:
@@ -107,7 +107,7 @@ functions:
     handler: handler.list
     events:
     - http:
-        path: /books
+        path: /book
         method: get            
 #    The following are a few example events you can configure
 #    NOTE: Please make sure to change your handler code to work with those events
@@ -161,20 +161,9 @@ functions:
 #       Description: "Description for the output"
 #       Value: "Some output value"
 
-iamRoleStatements:
-    - Effect: Allow
-      Action:
-        - dynamodb:Query
-        - dynamodb:Scan
-        - dynamodb:GetItem
-        - dynamodb:PutItem
-        - dynamodb:UpdateItem
-        - dynamodb:DeleteItem
-      Resource: "arn:aws:dynamodb:${opt:region, self:provider.region}:*:table/${self:custom.settings.TABLE_NAME}"
-
 plugins: 
-  - serverless-offline
   - serverless-dynamodb-local
+  - serverless-offline
 
 resources:
   Resources:
@@ -182,12 +171,13 @@ resources:
       Type: AWS::DynamoDB::Table
       Properties:
         AttributeDefinitions:
-        - AttributeName: "uuid"
+        - AttributeName: "bookID"
           AttributeType: "S"
         KeySchema:
-        - AttributeName: "uuid"
+        - AttributeName: "bookID"
           KeyType: "HASH"
         ProvisionedThroughput:
           ReadCapacityUnits: 1
           WriteCapacityUnits: 1
-        TableName: ${self:custom.settings.TABLE_NAME}
+        BillingMode: PAY_PER_REQUEST
+        TableName: ${self:custom.TABLES.BOOKS}

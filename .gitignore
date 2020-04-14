@@ -5,7 +5,12 @@ jspm_packages
 # Serverless directories
 .serverless
 
+# DynamoDB directories
+.dynamodb
+
 .vs
 
-
 *-lock.json
+
+*.log
+*.logs
